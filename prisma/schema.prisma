@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  MARKET
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+model Kid {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  accounts  Account[]
+}
+
+model Account {
+  id           String              @id @default(cuid())
+  kidId        String
+  kid          Kid                 @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  name         String
+  type         AccountType
+  createdAt    DateTime            @default(now())
+  transactions Transaction[]
+  tickerEvents MarketTickerEvent[]
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  accountId   String
+  account     Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type        TransactionType
+  amountCents Int
+  occurredAt  DateTime
+  note        String?
+  createdAt   DateTime        @default(now())
+}
+
+model MarketTickerEvent {
+  id            String   @id @default(cuid())
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  ticker        String
+  effectiveDate DateTime
+  createdAt     DateTime @default(now())
+}
