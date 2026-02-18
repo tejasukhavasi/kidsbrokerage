@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kids Brokerage</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>Kids Brokerage</h1>
+      <p class="subtitle">Plan how weekly investing can grow over time.</p>
+
+      <form id="calculator" class="card">
+        <label>
+          Weekly deposit ($)
+          <input id="weeklyDeposit" type="number" min="1" step="1" value="10" required />
+        </label>
+
+        <label>
+          Annual return (%)
+          <input id="annualReturn" type="number" min="0" max="25" step="0.1" value="6" required />
+        </label>
+
+        <label>
+          Years invested
+          <input id="years" type="number" min="1" max="30" step="1" value="10" required />
+        </label>
+
+        <button type="submit">Calculate</button>
+      </form>
+
+      <section id="result" class="card result" aria-live="polite">
+        Enter values and click calculate.
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
