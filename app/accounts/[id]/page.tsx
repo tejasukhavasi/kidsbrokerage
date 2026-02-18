@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { centsToDollars } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const accountTypeLabel: Record<AccountType, string> = {
   CHECKING: "Checking",
   SAVINGS: "Savings",
