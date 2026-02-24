@@ -43,8 +43,10 @@ model Transaction {
   type        TransactionType
   amountCents Int
   occurredAt  DateTime
-  note        String?
-  createdAt   DateTime        @default(now())
+  note          String?
+  shares        Float?
+  pricePerShare Float?
+  createdAt     DateTime        @default(now())
 }
 
 model MarketTickerEvent {
