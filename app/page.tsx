@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AccountType, TransactionType } from "@prisma/client";
-import { addTransaction, createAccount, createKid, setMarketTicker } from "@/app/actions";
+import { addTransaction, createAccount, createKid, setMarketTicker, transferFunds } from "@/app/actions";
 import { centsToDollars } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 
@@ -125,32 +125,109 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: "1rem" }}>
-        <h2>Update Market Ticker</h2>
-        <form action={setMarketTicker} className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          <label>
-            Market account
-            <select name="accountId" required>
-              <option value="">Select market account</option>
-              {allAccounts
-                .filter((account) => account.type === AccountType.MARKET)
-                .map((account) => (
+      {allAccounts.length >= 2 && (
+        <section className="card" style={{ marginBottom: "1rem" }}>
+          <h2>Transfer Between Accounts</h2>
+          <form action={transferFunds} className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <label>
+              From account
+              <select name="fromAccountId" required>
+                <option value="">Select source</option>
+                {allAccounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.kidName} - {account.name}
                   </option>
                 ))}
-            </select>
-          </label>
-          <label>
-            Ticker
-            <input name="ticker" placeholder="VOO" maxLength={10} required />
-          </label>
-          <label>
-            Effective date
-            <input name="effectiveDate" type="date" required />
-          </label>
-          <button type="submit">Save ticker event</button>
-        </form>
+              </select>
+            </label>
+            <label>
+              To account
+              <select name="toAccountId" required>
+                <option value="">Select destination</option>
+                {allAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.kidName} - {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Amount (USD)
+              <input name="amount" type="number" min="0.01" step="0.01" required />
+            </label>
+            <label>
+              Date
+              <input name="occurredAt" type="date" required />
+            </label>
+            <label>
+              Note (optional)
+              <input name="note" placeholder="Moving to market" />
+            </label>
+            <button type="submit">Transfer</button>
+          </form>
+        </section>
+      )}
+
+      <section className="card" style={{ marginBottom: "1rem" }}>
+        <h2>Update Market Ticker</h2>
+        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: 0 }}>
+          Track which stock/ETF a market account is invested in. Changes are logged with effective dates.
+        </p>
+        {allAccounts.filter((a) => a.type === AccountType.MARKET).length === 0 ? (
+          <p>No market accounts yet — create an account with type &ldquo;Market&rdquo; above.</p>
+        ) : (
+          <form action={setMarketTicker} className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <label>
+              Market account
+              <select name="accountId" required>
+                <option value="">Select market account</option>
+                {allAccounts
+                  .filter((account) => account.type === AccountType.MARKET)
+                  .map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.kidName} - {account.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Ticker
+              <input name="ticker" placeholder="VOO" maxLength={10} required list="ticker-suggestions" />
+              <datalist id="ticker-suggestions">
+                <option value="VOO">Vanguard S&amp;P 500 ETF</option>
+                <option value="VTI">Vanguard Total Stock Market</option>
+                <option value="SPY">SPDR S&amp;P 500 ETF</option>
+                <option value="QQQ">Invesco Nasdaq 100</option>
+                <option value="IVV">iShares Core S&amp;P 500</option>
+                <option value="VGT">Vanguard Info Tech ETF</option>
+                <option value="SCHD">Schwab US Dividend Equity</option>
+                <option value="VYM">Vanguard High Dividend Yield</option>
+                <option value="AAPL">Apple</option>
+                <option value="MSFT">Microsoft</option>
+                <option value="GOOG">Alphabet (Google)</option>
+                <option value="AMZN">Amazon</option>
+                <option value="NVDA">NVIDIA</option>
+                <option value="META">Meta Platforms</option>
+                <option value="TSLA">Tesla</option>
+                <option value="BRK.B">Berkshire Hathaway B</option>
+                <option value="JPM">JPMorgan Chase</option>
+                <option value="V">Visa</option>
+                <option value="DIS">Walt Disney</option>
+                <option value="COST">Costco</option>
+                <option value="VEA">Vanguard FTSE Developed Markets</option>
+                <option value="VWO">Vanguard FTSE Emerging Markets</option>
+                <option value="BND">Vanguard Total Bond Market</option>
+                <option value="AGG">iShares Core US Aggregate Bond</option>
+                <option value="ARKK">ARK Innovation ETF</option>
+              </datalist>
+            </label>
+            <label>
+              Effective date
+              <input name="effectiveDate" type="date" required />
+            </label>
+            <button type="submit">Save ticker event</button>
+          </form>
+        )}
       </section>
 
       <section className="card">

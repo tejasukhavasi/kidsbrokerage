@@ -3,6 +3,7 @@ import { AccountType, TransactionType } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { centsToDollars } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
+import { getStockPrice } from "@/lib/stock";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,31 @@ export default async function AccountDetailPage({
     return total + direction * tx.amountCents;
   }, 0);
 
+  const isMarket = account.type === AccountType.MARKET;
+  const currentTicker = account.tickerEvents[0]?.ticker;
+  let currentPrice: number | null = null;
+  let totalShares = 0;
+  let costBasisCents = 0;
+
+  if (isMarket && currentTicker) {
+    try {
+      currentPrice = await getStockPrice(currentTicker);
+    } catch {
+      currentPrice = null;
+    }
+
+    for (const tx of account.transactions) {
+      const direction = tx.type === TransactionType.DEPOSIT ? 1 : -1;
+      if (tx.shares) {
+        totalShares += direction * tx.shares;
+      }
+      costBasisCents += direction * tx.amountCents;
+    }
+  }
+
+  const marketValueCents = currentPrice ? Math.round(totalShares * currentPrice * 100) : null;
+  const gainLossCents = marketValueCents !== null ? marketValueCents - costBasisCents : null;
+
   return (
     <main>
       <p>
@@ -48,6 +74,30 @@ export default async function AccountDetailPage({
       <p>
         {account.kid.name} · {accountTypeLabel[account.type]} · Balance {centsToDollars(balanceCents)}
       </p>
+
+      {isMarket && currentTicker && (
+        <section className="card" style={{ marginBottom: "1rem" }}>
+          <h2>Market Summary — {currentTicker}</h2>
+          {currentPrice !== null ? (
+            <table>
+              <tbody>
+                <tr><td>Current Price</td><td>${currentPrice.toFixed(2)}</td></tr>
+                <tr><td>Total Shares</td><td>{totalShares.toFixed(4)}</td></tr>
+                <tr><td>Market Value</td><td>{centsToDollars(marketValueCents!)}</td></tr>
+                <tr><td>Cost Basis</td><td>{centsToDollars(costBasisCents)}</td></tr>
+                <tr>
+                  <td>Gain/Loss</td>
+                  <td style={{ color: gainLossCents! >= 0 ? "green" : "red" }}>
+                    {centsToDollars(gainLossCents!)} ({costBasisCents !== 0 ? ((gainLossCents! / Math.abs(costBasisCents)) * 100).toFixed(2) : "0.00"}%)
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <p>Unable to fetch current price for {currentTicker}.</p>
+          )}
+        </section>
+      )}
 
       <section className="card" style={{ marginBottom: "1rem" }}>
         <h2>Transactions</h2>
@@ -60,6 +110,8 @@ export default async function AccountDetailPage({
                 <th>Date</th>
                 <th>Type</th>
                 <th>Amount</th>
+                {isMarket && <th>Shares</th>}
+                {isMarket && <th>Price</th>}
                 <th>Note</th>
               </tr>
             </thead>
@@ -72,6 +124,8 @@ export default async function AccountDetailPage({
                     <td>{tx.occurredAt.toISOString().slice(0, 10)}</td>
                     <td>{tx.type === TransactionType.DEPOSIT ? "Deposit" : "Withdrawal"}</td>
                     <td>{centsToDollars(signed)}</td>
+                    {isMarket && <td>{tx.shares?.toFixed(4) ?? "—"}</td>}
+                    {isMarket && <td>{tx.pricePerShare ? `$${tx.pricePerShare.toFixed(2)}` : "—"}</td>}
                     <td>{tx.note || "—"}</td>
                   </tr>
                 );
